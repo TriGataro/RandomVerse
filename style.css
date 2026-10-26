@@ -12,6 +12,10 @@
     --rv-border: #d9c7a6;
 }
 
+html {
+    scroll-behavior: smooth;
+}
+
 body {
     min-height: 100vh;
     color: var(--rv-text);
@@ -22,6 +26,61 @@ body {
 .app-shell {
     min-height: 100vh;
 }
+
+/* Las secciones dejan espacio para la barra de navegación fija. */
+.app-section {
+    scroll-margin-top: 5.5rem;
+}
+
+/* Barra de navegación. */
+.navbar-rv {
+    background-color: rgba(255, 250, 240, 0.96);
+    border-bottom: 1px solid var(--rv-border);
+    backdrop-filter: blur(8px);
+}
+
+.navbar-rv .navbar-brand {
+    color: var(--rv-text);
+    font-weight: 700;
+}
+
+.navbar-rv .navbar-brand:hover,
+.navbar-rv .navbar-brand:focus-visible {
+    color: var(--rv-accent);
+}
+
+.navbar-brand-icon {
+    width: 1rem;
+    height: 1rem;
+    image-rendering: pixelated;
+}
+
+.navbar-rv .nav-link {
+    padding: 0.45rem 0.9rem;
+    color: var(--rv-muted);
+    font-weight: 600;
+    border-radius: 50rem;
+}
+
+.navbar-rv .nav-link:hover,
+.navbar-rv .nav-link:focus-visible {
+    color: var(--rv-accent);
+    background-color: var(--rv-accent-soft);
+}
+
+.navbar-rv .nav-link.active {
+    color: var(--rv-accent-active);
+    background-color: var(--rv-accent-soft);
+}
+
+.navbar-rv .navbar-toggler {
+    border-color: var(--rv-border);
+}
+
+.navbar-rv .navbar-toggler:focus {
+    box-shadow: 0 0 0 0.2rem rgba(92, 61, 43, 0.25);
+}
+
 
 .verse-card {
     max-width: 46rem;
@@ -165,6 +224,71 @@ body {
     color: #1c7fb8;
 }
 
+/* Concordancia. */
+.concordance-card {
+    max-width: 60rem;
+    border-radius: 1.25rem;
+    background-color: var(--rv-surface);
+    border: 1px solid var(--rv-border);
+    --bs-secondary-color: var(--rv-muted);
+    --bs-secondary-color-rgb: 90, 74, 58;
+}
+
+.concordance-table {
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--rv-text);
+    --bs-table-border-color: var(--rv-border);
+    --bs-table-hover-color: var(--rv-text);
+    --bs-table-hover-bg: var(--rv-accent-soft);
+    margin-bottom: 0;
+}
+
+.concordance-table thead th {
+    color: var(--rv-muted);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom-width: 2px;
+}
+
+.concordance-row {
+    cursor: pointer;
+}
+
+.concordance-text {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.form-control:focus {
+    border-color: var(--rv-accent);
+    box-shadow: 0 0 0 0.25rem rgba(92, 61, 43, 0.22);
+}
+
+.form-control:disabled {
+    background-color: var(--rv-accent-soft);
+}
+
+.pagination {
+    --bs-pagination-color: var(--rv-accent);
+    --bs-pagination-bg: var(--rv-surface);
+    --bs-pagination-border-color: var(--rv-border);
+    --bs-pagination-hover-color: var(--rv-accent-hover);
+    --bs-pagination-hover-bg: var(--rv-accent-soft);
+    --bs-pagination-hover-border-color: var(--rv-border);
+    --bs-pagination-focus-color: var(--rv-accent-hover);
+    --bs-pagination-focus-bg: var(--rv-accent-soft);
+    --bs-pagination-focus-box-shadow: 0 0 0 0.25rem rgba(92, 61, 43, 0.22);
+    --bs-pagination-active-color: #ffffff;
+    --bs-pagination-active-bg: var(--rv-accent);
+    --bs-pagination-active-border-color: var(--rv-accent);
+    --bs-pagination-disabled-color: var(--rv-muted);
+    --bs-pagination-disabled-bg: var(--rv-surface);
+    --bs-pagination-disabled-border-color: var(--rv-border);
+}
+
 /* Pie de página. */
 .app-footer {
     color: var(--rv-footer-text);
@@ -223,6 +347,10 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
     .verse-container.is-updating {
         animation: none;
     }

@@ -36,108 +36,201 @@
     <link href="style.css" rel="stylesheet">
 </head>
 <body>
+    <nav class="navbar navbar-expand-md navbar-rv sticky-top">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="#inicio" data-nav="inicio">
+                <img class="navbar-brand-icon" src="Img/bible.png" alt="" width="16" height="16">
+                <span>Versículo Aleatorio</span>
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#main-nav"
+                aria-controls="main-nav" aria-expanded="false" aria-label="Abrir menú de navegación">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="main-nav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#inicio" data-nav="inicio" aria-current="page">
+                            <i class="bi bi-house-door me-1" aria-hidden="true"></i>Inicio
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#versiculo" data-nav="versiculo">
+                            <i class="bi bi-book me-1" aria-hidden="true"></i>Versículo
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#concordancia" data-nav="concordancia">
+                            <i class="bi bi-search me-1" aria-hidden="true"></i>Concordancia
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
     <div class="app-shell d-flex flex-column">
-        <main class="flex-grow-1 d-flex align-items-center justify-content-center">
-            <div class="container py-5">
-                <div class="verse-card card border-0 shadow-lg mx-auto">
-                    <div class="card-body p-4 p-md-5">
-                        <header class="text-center mb-4">
-                            <span class="brand-icon d-inline-flex align-items-center justify-content-center rounded-circle mb-3">
-                                <i class="bi bi-book-half" aria-hidden="true"></i>
-                            </span>
-                            <h1 class="h3 fw-bold mb-1">Versículo Aleatorio</h1>
-                            <p class="text-body-secondary mb-0">Un mensaje de la Palabra para hoy</p>
-                        </header>
+        <main class="flex-grow-1">
+            <div class="container py-4 py-md-5">
+                <section id="inicio" class="app-section app-hero text-center mb-4">
+                    <span class="brand-icon d-inline-flex align-items-center justify-content-center rounded-circle mb-3">
+                        <i class="bi bi-book-half" aria-hidden="true"></i>
+                    </span>
+                    <h1 class="h3 fw-bold mb-1">Versículo Aleatorio</h1>
+                    <p class="text-body-secondary mb-0">Un mensaje de la Palabra para hoy</p>
+                </section>
 
-                        <div id="verse-container" class="verse-container text-center" aria-live="polite">
-                            <p id="verse-reference" class="verse-reference text-uppercase fw-semibold mb-3">
-                                Cargando…
-                            </p>
+                <section id="versiculo" class="app-section">
+                    <div class="verse-card card border-0 shadow-lg mx-auto">
+                        <div class="card-body p-4 p-md-5">
+                            <div id="verse-container" class="verse-container text-center" aria-live="polite">
+                                <p id="verse-reference" class="verse-reference text-uppercase fw-semibold mb-3">
+                                    Cargando…
+                                </p>
 
-                            <p id="verse-text" class="verse-text mb-3">
-                                Espera un momento mientras se carga la Biblia.
-                            </p>
+                                <p id="verse-text" class="verse-text mb-3">
+                                    Espera un momento mientras se carga la Biblia.
+                                </p>
 
-                            <p id="verse-title" class="verse-title text-body-secondary fst-italic mb-0"></p>
+                                <p id="verse-title" class="verse-title text-body-secondary fst-italic mb-0"></p>
+                            </div>
+
+                            <div id="verse-error" class="alert alert-danger mt-4 mb-0 d-none" role="alert"></div>
+
+                            <div class="d-grid gap-2 col-10 col-sm-8 col-md-6 mx-auto mt-4">
+                                <button id="refresh-button" type="button" class="btn btn-primary btn-lg rounded-pill px-4" disabled>
+                                    <i id="refresh-icon" class="bi bi-arrow-clockwise me-2" aria-hidden="true"></i>
+                                    <span id="refresh-label">Cargando…</span>
+                                </button>
+
+                                <div class="btn-group share-group" role="group" aria-label="Compartir el versículo">
+                                    <button id="share-button" type="button" class="btn btn-outline-primary btn-lg px-4 share-main" disabled>
+                                        <i id="share-icon" class="bi bi-share me-2" aria-hidden="true"></i>
+                                        <span id="share-label">Compartir versículo</span>
+                                    </button>
+
+                                    <button id="share-menu-button" type="button"
+                                        class="btn btn-outline-primary btn-lg dropdown-toggle dropdown-toggle-split"
+                                        data-bs-toggle="dropdown" aria-expanded="false" disabled>
+                                        <span class="visually-hidden">Más opciones para compartir</span>
+                                    </button>
+
+                                    <ul class="dropdown-menu dropdown-menu-end share-menu shadow-sm">
+                                        <li>
+                                            <h2 class="dropdown-header h6 mb-1">Compartir en</h2>
+                                        </li>
+                                        <li>
+                                            <a id="share-whatsapp" class="dropdown-item d-flex align-items-center gap-2"
+                                                href="#" target="_blank" rel="noopener noreferrer">
+                                                <i class="bi bi-whatsapp social-icon social-whatsapp" aria-hidden="true"></i>
+                                                WhatsApp
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a id="share-facebook" class="dropdown-item d-flex align-items-center gap-2"
+                                                href="#" target="_blank" rel="noopener noreferrer">
+                                                <i class="bi bi-facebook social-icon social-facebook" aria-hidden="true"></i>
+                                                Facebook
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a id="share-x" class="dropdown-item d-flex align-items-center gap-2"
+                                                href="#" target="_blank" rel="noopener noreferrer">
+                                                <i class="bi bi-twitter-x social-icon social-x" aria-hidden="true"></i>
+                                                X (Twitter)
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a id="share-telegram" class="dropdown-item d-flex align-items-center gap-2"
+                                                href="#" target="_blank" rel="noopener noreferrer">
+                                                <i class="bi bi-telegram social-icon social-telegram" aria-hidden="true"></i>
+                                                Telegram
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <button id="copy-verse" type="button" class="dropdown-item d-flex align-items-center gap-2">
+                                                <i class="bi bi-clipboard social-icon" aria-hidden="true"></i>
+                                                Copiar versículo y enlace
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <p id="share-feedback" class="share-feedback text-center small mt-3 mb-0" aria-live="polite"></p>
+
+                            <p id="verse-status" class="visually-hidden" role="status"></p>
                         </div>
 
-                        <div id="verse-error" class="alert alert-danger mt-4 mb-0 d-none" role="alert"></div>
+                        <div class="card-footer bg-transparent border-0 text-center pb-4">
+                            <small class="text-body-secondary">Reina Valera 1960</small>
+                        </div>
+                    </div>
+                </section>
 
-                        <div class="d-grid gap-2 col-10 col-sm-8 col-md-6 mx-auto mt-4">
-                            <button id="refresh-button" type="button" class="btn btn-primary btn-lg rounded-pill px-4" disabled>
-                                <i id="refresh-icon" class="bi bi-arrow-clockwise me-2" aria-hidden="true"></i>
-                                <span id="refresh-label">Cargando…</span>
-                            </button>
+                <section id="concordancia" class="app-section mt-5">
+                    <div class="concordance-card card border-0 shadow-lg mx-auto">
+                        <div class="card-body p-4 p-md-5">
+                            <header class="mb-4">
+                                <h2 class="h4 fw-bold mb-1">
+                                    <i class="bi bi-search me-2" aria-hidden="true"></i>Concordancia
+                                </h2>
+                                <p class="text-body-secondary mb-0">
+                                    Busca una palabra o frase dentro del texto de los versículos.
+                                </p>
+                            </header>
 
-                            <div class="btn-group share-group" role="group" aria-label="Compartir el versículo">
-                                <button id="share-button" type="button" class="btn btn-outline-primary btn-lg px-4 share-main" disabled>
-                                    <i id="share-icon" class="bi bi-share me-2" aria-hidden="true"></i>
-                                    <span id="share-label">Compartir versículo</span>
-                                </button>
+                            <form id="concordance-form" class="mb-4" role="search" novalidate>
+                                <label for="concordance-input" class="form-label fw-semibold">Texto a buscar</label>
+                                <div class="input-group input-group-lg">
+                                    <input id="concordance-input" type="search" class="form-control"
+                                        placeholder="Ej.: amor, esperanza, fe…" autocomplete="off"
+                                        minlength="2" disabled>
+                                    <button id="concordance-search-button" class="btn btn-primary px-4"
+                                        type="submit" disabled>
+                                        <i class="bi bi-search me-2" aria-hidden="true"></i>
+                                        <span>Buscar</span>
+                                    </button>
+                                </div>
+                                <div class="form-text">
+                                    No distingue mayúsculas ni acentos. Se muestran 10 resultados por página.
+                                </div>
+                            </form>
 
-                                <button id="share-menu-button" type="button"
-                                    class="btn btn-outline-primary btn-lg dropdown-toggle dropdown-toggle-split"
-                                    data-bs-toggle="dropdown" aria-expanded="false" disabled>
-                                    <span class="visually-hidden">Más opciones para compartir</span>
-                                </button>
+                            <div id="concordance-message" class="alert d-none" role="status" aria-live="polite"></div>
 
-                                <ul class="dropdown-menu dropdown-menu-end share-menu shadow-sm">
-                                    <li>
-                                        <h2 class="dropdown-header h6 mb-1">Compartir en</h2>
-                                    </li>
-                                    <li>
-                                        <a id="share-whatsapp" class="dropdown-item d-flex align-items-center gap-2"
-                                            href="#" target="_blank" rel="noopener noreferrer">
-                                            <i class="bi bi-whatsapp social-icon social-whatsapp" aria-hidden="true"></i>
-                                            WhatsApp
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a id="share-facebook" class="dropdown-item d-flex align-items-center gap-2"
-                                            href="#" target="_blank" rel="noopener noreferrer">
-                                            <i class="bi bi-facebook social-icon social-facebook" aria-hidden="true"></i>
-                                            Facebook
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a id="share-x" class="dropdown-item d-flex align-items-center gap-2"
-                                            href="#" target="_blank" rel="noopener noreferrer">
-                                            <i class="bi bi-twitter-x social-icon social-x" aria-hidden="true"></i>
-                                            X (Twitter)
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a id="share-telegram" class="dropdown-item d-flex align-items-center gap-2"
-                                            href="#" target="_blank" rel="noopener noreferrer">
-                                            <i class="bi bi-telegram social-icon social-telegram" aria-hidden="true"></i>
-                                            Telegram
-                                        </a>
-                                    </li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li>
-                                        <button id="copy-verse" type="button" class="dropdown-item d-flex align-items-center gap-2">
-                                            <i class="bi bi-clipboard social-icon" aria-hidden="true"></i>
-                                            Copiar versículo y enlace
-                                        </button>
-                                    </li>
-                                </ul>
+                            <div id="concordance-results" class="d-none">
+                                <p id="concordance-count" class="text-body-secondary small mb-3" aria-live="polite"></p>
+
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle concordance-table mb-3">
+                                        <caption class="visually-hidden">Resultados de la concordancia</caption>
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">Referencia</th>
+                                                <th scope="col">Texto</th>
+                                                <th scope="col" class="text-end">Acción</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="concordance-tbody"></tbody>
+                                    </table>
+                                </div>
+
+                                <nav id="concordance-pagination-nav" class="d-none" aria-label="Paginación de resultados">
+                                    <ul id="concordance-pagination" class="pagination pagination-sm justify-content-center mb-0"></ul>
+                                </nav>
                             </div>
                         </div>
-
-                        <p id="share-feedback" class="share-feedback text-center small mt-3 mb-0" aria-live="polite"></p>
-
-                        <p id="verse-status" class="visually-hidden" role="status"></p>
                     </div>
-
-                    <div class="card-footer bg-transparent border-0 text-center pb-4">
-                        <small class="text-body-secondary">Reina Valera 1960</small>
-                    </div>
-                </div>
+                </section>
             </div>
         </main>
 
         <footer class="app-footer text-center px-3 pb-4">
             <p class="mb-0">
+                Página hecha por
                 <a class="footer-link" href="https://github.com/TriGataro" target="_blank"
                     rel="noopener noreferrer" aria-label="Trigataro en GitHub" title="GitHub de Trigataro">
                     <strong class="fw-semibold">Trigataro</strong>

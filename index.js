@@ -8,6 +8,12 @@ const DATA_URL = "Biblia.json";
 // Tiempo (en milisegundos) que permanece visible el mensaje de compartir.
 const FEEDBACK_DURATION = 3000;
 
+// Cantidad máxima de resultados por página en la concordancia.
+const SEARCH_PAGE_SIZE = 10;
+
+// Mínimo de caracteres aceptados en una búsqueda.
+const MIN_SEARCH_LENGTH = 2;
+
 // Referencias a los elementos de index.html que se actualizan desde este archivo.
 const elements = {
     container: document.getElementById("verse-container"),
@@ -22,6 +28,15 @@ const elements = {
     shareMenuButton: document.getElementById("share-menu-button"),
     shareFeedback: document.getElementById("share-feedback"),
     status: document.getElementById("verse-status"),
+    searchForm: document.getElementById("concordance-form"),
+    searchInput: document.getElementById("concordance-input"),
+    searchButton: document.getElementById("concordance-search-button"),
+    searchMessage: document.getElementById("concordance-message"),
+    searchResults: document.getElementById("concordance-results"),
+    searchCount: document.getElementById("concordance-count"),
+    searchTbody: document.getElementById("concordance-tbody"),
+    paginationNav: document.getElementById("concordance-pagination-nav"),
+    pagination: document.getElementById("concordance-pagination"),
 };
 
 // Enlaces a redes sociales; se completan con el versículo actual.
@@ -37,6 +52,9 @@ let verses = [];          // Lista completa de versículos cargados desde el JSO
 let currentIndex = -1;    // Posición del versículo actual dentro de `verses`.
 let currentVerse = null;  // Objeto del versículo que se está mostrando.
 let feedbackTimer = null; // Temporizador para ocultar el mensaje de compartir.
+let searchResults = [];   // Índices de los versículos que coinciden con la búsqueda.
+let searchPage = 1;       // Página actual de resultados (empieza en 1).
+let currentQuery = "";    // Último texto buscado, para mostrarlo en el resumen.
 
 // ============================================================================
 // Utilidades
@@ -66,9 +84,36 @@ function formatReference(verse) {
     return `${verse.Book} ${verse.Chapter}:${verse.Verse}`;
 }
 
+/** Quita acentos y pasa a minúsculas para comparar búsquedas. */
+function normalizeText(text) {
+    return text
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+}
+
+/** Escapa caracteres especiales antes de insertar datos del JSON en el HTML. */
+function escapeHtml(value) {
+    const entities = {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+    };
+
+    return String(value).replace(/[&<>"']/g, (character) => entities[character]);
+}
+
+/** Activa o desactiva el formulario de la concordancia mientras carga la Biblia. */
+function setSearchEnabled(isEnabled) {
+    elements.searchInput.disabled = !isEnabled;
+    elements.searchButton.disabled = !isEnabled;
+}
+
 /**
  * Activa o desactiva el estado de carga de los botones de acción.
- * Mientras se carga la Biblia, actualizar y compartir quedan bloqueados.
+ * Mientras se carga la Biblia, actualizar, compartir y buscar quedan bloqueados.
  */
 function setLoading(isLoading) {
     elements.button.disabled = isLoading;
@@ -76,6 +121,7 @@ function setLoading(isLoading) {
     if (isLoading) {
         elements.shareButton.disabled = true;
         elements.shareMenuButton.disabled = true;
+        setSearchEnabled(false);
     }
 
     // El icono se convierte en un spinner mientras se obtienen los datos.
@@ -106,6 +152,69 @@ function clearShareFeedback() {
     clearTimeout(feedbackTimer);
     elements.shareFeedback.textContent = "";
     elements.shareFeedback.classList.remove("is-success", "is-error");
+}
+
+/** Muestra un mensaje en la sección de concordancia y oculta la tabla. */
+function showSearchMessage(message, type) {
+    elements.searchMessage.textContent = message;
+    elements.searchMessage.className = `alert alert-${type}`;
+    elements.searchMessage.classList.remove("d-none");
+    elements.searchResults.classList.add("d-none");
+    elements.paginationNav.classList.add("d-none");
+}
+
+/** Oculta el mensaje de la concordancia. */
+function hideSearchMessage() {
+    elements.searchMessage.textContent = "";
+    elements.searchMessage.classList.add("d-none");
+}
+
+// ============================================================================
+// Navegación
+// ============================================================================
+
+/** Marca como activo el enlace de navegación de la sección indicada. */
+function setActiveNav(view) {
+    document.querySelectorAll("[data-nav]").forEach((link) => {
+        const isActive = link.dataset.nav === view;
+
+        link.classList.toggle("active", isActive);
+
+        if (isActive) {
+            link.setAttribute("aria-current", "page");
+        } else {
+            link.removeAttribute("aria-current");
+        }
+    });
+}
+
+/** Cierra el menú de navegación en pantallas pequeñas después de elegir una opción. */
+function closeMobileNav() {
+    const collapse = document.getElementById("main-nav");
+
+    if (!collapse || !collapse.classList.contains("show") || !window.bootstrap) {
+        return;
+    }
+
+    window.bootstrap.Collapse.getOrCreateInstance(collapse, { toggle: false }).hide();
+}
+
+/** Desplaza la página hasta una sección, respetando el desplazamiento suave. */
+function scrollToSection(id) {
+    const section = document.getElementById(id);
+
+    if (section && typeof section.scrollIntoView === "function") {
+        section.scrollIntoView({ block: "start" });
+    }
+}
+
+/** Sincroniza el enlace activo con el hash de la URL (#inicio, #versiculo, #concordancia). */
+function syncNavFromHash() {
+    const view = window.location.hash.replace("#", "");
+
+    if (["inicio", "versiculo", "concordancia"].includes(view)) {
+        setActiveNav(view);
+    }
 }
 
 // ============================================================================
@@ -187,6 +296,7 @@ async function loadBible() {
 
         verses = data;
         setLoading(false);
+        setSearchEnabled(true);
         showRandomVerse();
     } catch (error) {
         console.error("Error al cargar la Biblia:", error);
@@ -206,6 +316,192 @@ function handleRefresh() {
     }
 
     showRandomVerse();
+}
+
+// ============================================================================
+// Concordancia
+// ============================================================================
+
+/** Construye los botones de paginación para la página actual. */
+function renderPagination(totalPages) {
+    if (totalPages <= 1) {
+        elements.pagination.innerHTML = "";
+        elements.paginationNav.classList.add("d-none");
+        return;
+    }
+
+    const windowSize = 5;
+    let firstPage = Math.max(1, searchPage - Math.floor(windowSize / 2));
+    let lastPage = Math.min(totalPages, firstPage + windowSize - 1);
+    firstPage = Math.max(1, lastPage - windowSize + 1);
+
+    let html = "";
+    const previousDisabled = searchPage === 1;
+
+    html += `<li class="page-item ${previousDisabled ? "disabled" : ""}">
+        <button class="page-link" type="button" data-page="${searchPage - 1}"
+            aria-label="Página anterior" ${previousDisabled ? "disabled" : ""}>
+            <i class="bi bi-chevron-left" aria-hidden="true"></i>
+        </button>
+    </li>`;
+
+    for (let page = firstPage; page <= lastPage; page++) {
+        const isCurrent = page === searchPage;
+        const currentAttribute = isCurrent ? 'aria-current="page"' : "";
+
+        html += `<li class="page-item ${isCurrent ? "active" : ""}">
+            <button class="page-link" type="button" data-page="${page}" ${currentAttribute}>
+                ${page}
+            </button>
+        </li>`;
+    }
+
+    const nextDisabled = searchPage === totalPages;
+
+    html += `<li class="page-item ${nextDisabled ? "disabled" : ""}">
+        <button class="page-link" type="button" data-page="${searchPage + 1}"
+            aria-label="Página siguiente" ${nextDisabled ? "disabled" : ""}>
+            <i class="bi bi-chevron-right" aria-hidden="true"></i>
+        </button>
+    </li>`;
+
+    elements.pagination.innerHTML = html;
+    elements.paginationNav.classList.remove("d-none");
+}
+
+/** Dibuja en la tabla los resultados de la página actual. */
+function renderSearchResults() {
+    const totalResults = searchResults.length;
+
+    if (totalResults === 0) {
+        elements.searchResults.classList.add("d-none");
+        elements.paginationNav.classList.add("d-none");
+        return;
+    }
+
+    const totalPages = Math.ceil(totalResults / SEARCH_PAGE_SIZE);
+    searchPage = Math.min(Math.max(searchPage, 1), totalPages);
+
+    const start = (searchPage - 1) * SEARCH_PAGE_SIZE;
+    const pageItems = searchResults.slice(start, start + SEARCH_PAGE_SIZE);
+
+    elements.searchTbody.innerHTML = pageItems
+        .map((verseIndex) => {
+            const verse = verses[verseIndex];
+            const reference = escapeHtml(formatReference(verse));
+            const text = escapeHtml(verse.Text);
+
+            return `<tr class="concordance-row" data-verse-index="${verseIndex}">
+                <td class="text-nowrap"><span class="fw-semibold">${reference}</span></td>
+                <td><span class="concordance-text" title="${text}">${text}</span></td>
+                <td class="text-end">
+                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3"
+                        data-verse-index="${verseIndex}">
+                        Ver
+                    </button>
+                </td>
+            </tr>`;
+        })
+        .join("");
+
+    const firstResult = start + 1;
+    const lastResult = start + pageItems.length;
+    elements.searchCount.textContent =
+        `Mostrando ${firstResult}–${lastResult} de ${totalResults.toLocaleString("es-ES")} ` +
+        `resultados para «${currentQuery}».`;
+
+    hideSearchMessage();
+    elements.searchResults.classList.remove("d-none");
+    renderPagination(totalPages);
+}
+
+/** Busca el texto escrito dentro de todos los versículos de la Biblia. */
+function handleSearch(event) {
+    event.preventDefault();
+
+    const query = elements.searchInput.value.trim();
+    currentQuery = query;
+    setActiveNav("concordancia");
+
+    if (verses.length === 0) {
+        showSearchMessage("La Biblia todavía se está cargando. Inténtalo en un momento.", "info");
+        return;
+    }
+
+    if (query.length < MIN_SEARCH_LENGTH) {
+        searchResults = [];
+        searchPage = 1;
+        showSearchMessage(
+            `Escribe al menos ${MIN_SEARCH_LENGTH} caracteres para buscar en la concordancia.`,
+            "warning"
+        );
+        return;
+    }
+
+    const normalizedQuery = normalizeText(query);
+    const matches = [];
+
+    for (let index = 0; index < verses.length; index++) {
+        if (normalizeText(verses[index].Text).includes(normalizedQuery)) {
+            matches.push(index);
+        }
+    }
+
+    searchResults = matches;
+    searchPage = 1;
+
+    if (searchResults.length === 0) {
+        showSearchMessage(`No se encontraron versículos que contengan «${query}».`, "warning");
+        return;
+    }
+
+    renderSearchResults();
+}
+
+/** Muestra el versículo de un resultado y lleva al usuario a la tarjeta principal. */
+function selectVerseByIndex(index) {
+    const verse = verses[index];
+
+    if (!verse) {
+        return;
+    }
+
+    currentIndex = index;
+    renderVerse(verse);
+    setActiveNav("versiculo");
+    closeMobileNav();
+    scrollToSection("versiculo");
+}
+
+/** Detecta el clic sobre una fila de resultados. */
+function handleResultClick(event) {
+    const row = event.target.closest("tr[data-verse-index]");
+
+    if (!row) {
+        return;
+    }
+
+    selectVerseByIndex(Number(row.dataset.verseIndex));
+}
+
+/** Cambia de página en los resultados de la concordancia. */
+function handlePaginationClick(event) {
+    const button = event.target.closest("button[data-page]");
+
+    if (!button || button.disabled) {
+        return;
+    }
+
+    const totalPages = Math.ceil(searchResults.length / SEARCH_PAGE_SIZE);
+    const page = Number(button.dataset.page);
+
+    if (!Number.isInteger(page) || page < 1 || page > totalPages || page === searchPage) {
+        return;
+    }
+
+    searchPage = page;
+    renderSearchResults();
+    elements.searchResults.scrollIntoView({ block: "start" });
 }
 
 // ============================================================================
@@ -243,6 +539,13 @@ function buildShareUrl(network, verse) {
     return urls[network] ?? "#";
 }
 
+/** Actualiza los enlaces del menú para que compartan el versículo actual. */
+function updateSocialLinks(verse) {
+    for (const [network, link] of Object.entries(socialLinks)) {
+        link.href = buildShareUrl(network, verse);
+    }
+}
+
 /** Abre una URL externa en una pestaña nueva sin perder la referencia de origen. */
 function openExternalWindow(url) {
     const link = document.createElement("a");
@@ -252,13 +555,6 @@ function openExternalWindow(url) {
     document.body.appendChild(link);
     link.click();
     link.remove();
-}
-
-/** Actualiza los enlaces del menú para que compartan el versículo actual. */
-function updateSocialLinks(verse) {
-    for (const [network, link] of Object.entries(socialLinks)) {
-        link.href = buildShareUrl(network, verse);
-    }
 }
 
 /**
@@ -374,6 +670,20 @@ elements.button.addEventListener("click", handleRefresh);
 elements.shareButton.addEventListener("click", handleShare);
 document.getElementById("copy-verse").addEventListener("click", copyCurrentVerse);
 socialLinks.facebook.addEventListener("click", handleFacebookShare);
+
+elements.searchForm.addEventListener("submit", handleSearch);
+elements.searchTbody.addEventListener("click", handleResultClick);
+elements.pagination.addEventListener("click", handlePaginationClick);
+
+document.querySelectorAll("[data-nav]").forEach((link) => {
+    link.addEventListener("click", () => {
+        setActiveNav(link.dataset.nav);
+        closeMobileNav();
+    });
+});
+
+window.addEventListener("hashchange", syncNavFromHash);
+syncNavFromHash();
 
 // Al cargar la página se obtiene la Biblia y se muestra el primer versículo.
 loadBible();
