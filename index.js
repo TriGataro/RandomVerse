@@ -217,6 +217,11 @@ function buildShareText(verse) {
     return `«${verse.Text}»\n\n${formatReference(verse)} — Reina Valera 1960`;
 }
 
+/** Arma el mensaje completo: el texto del versículo y el enlace de la página. */
+function buildShareMessage(verse) {
+    return `${buildShareText(verse)}\n\n${window.location.href}`;
+}
+
 /**
  * Construye la URL de compartir para cada red social.
  * El texto y la dirección de la página se codifican para que viajen
@@ -229,13 +234,24 @@ function buildShareUrl(network, verse) {
     const encodedUrl = encodeURIComponent(pageUrl);
 
     const urls = {
-        whatsapp: `https://wa.me/?text=${encodeURIComponent(`${text}\n\n${pageUrl}`)}`,
+        whatsapp: `https://wa.me/?text=${encodeURIComponent(buildShareMessage(verse))}`,
         facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedText}`,
         x: `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`,
         telegram: `https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`,
     };
 
     return urls[network] ?? "#";
+}
+
+/** Abre una URL externa en una pestaña nueva sin perder la referencia de origen. */
+function openExternalWindow(url) {
+    const link = document.createElement("a");
+    link.href = url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
 }
 
 /** Actualiza los enlaces del menú para que compartan el versículo actual. */
@@ -271,15 +287,15 @@ async function copyText(text) {
     }
 }
 
-/** Copia el versículo actual y muestra la confirmación correspondiente. */
+/** Copia el versículo actual con su enlace y muestra la confirmación. */
 async function copyCurrentVerse() {
     if (!currentVerse) {
         return;
     }
 
     try {
-        await copyText(buildShareText(currentVerse));
-        showShareFeedback("Versículo copiado al portapapeles.", "success");
+        await copyText(buildShareMessage(currentVerse));
+        showShareFeedback("Versículo y enlace copiados al portapapeles.", "success");
     } catch (error) {
         console.error("Error al copiar el versículo:", error);
         showShareFeedback("No se pudo compartir el versículo.", "error");
@@ -326,6 +342,30 @@ async function handleShare() {
     await copyCurrentVerse();
 }
 
+/**
+ * Facebook no permite prerrellenar el texto de la publicación desde la web:
+ * su enlace de compartir solo acepta la dirección. Por eso se abre su ventana
+ * y se copia el texto completo para que el usuario solo tenga que pegarlo.
+ */
+async function handleFacebookShare(event) {
+    event.preventDefault();
+
+    if (!currentVerse) {
+        return;
+    }
+
+    // Se abre Facebook dentro del gesto del usuario para evitar bloqueos.
+    openExternalWindow(buildShareUrl("facebook", currentVerse));
+
+    try {
+        await copyText(buildShareMessage(currentVerse));
+        showShareFeedback("Texto copiado. Pégalo en tu publicación de Facebook.", "success");
+    } catch (error) {
+        console.error("Error al copiar el texto para Facebook:", error);
+        showShareFeedback("Usa «Copiar versículo y enlace» y pégalo en Facebook.", "error");
+    }
+}
+
 // ============================================================================
 // Inicio de la aplicación
 // ============================================================================
@@ -333,6 +373,7 @@ async function handleShare() {
 elements.button.addEventListener("click", handleRefresh);
 elements.shareButton.addEventListener("click", handleShare);
 document.getElementById("copy-verse").addEventListener("click", copyCurrentVerse);
+socialLinks.facebook.addEventListener("click", handleFacebookShare);
 
 // Al cargar la página se obtiene la Biblia y se muestra el primer versículo.
 loadBible();
