@@ -1,0 +1,2 @@
+# RandomVerse
+Versículo Biblico Aleatorio
