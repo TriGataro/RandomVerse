@@ -130,7 +130,7 @@ function setLoading(isLoading) {
         : "bi bi-arrow-clockwise me-2";
     elements.label.textContent = isLoading
         ? "Cargando…"
-        : "Actualizar versículo";
+        : "Actualizar";
 }
 
 /** Muestra un mensaje temporal debajo de los botones de acción. */
