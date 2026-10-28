@@ -1,4 +1,47 @@
 // ============================================================================
+// Temas visuales
+// ============================================================================
+
+/** Obtiene el tema válido guardado o usa el tema cálido por defecto. */
+function loadTheme() {
+    try {
+        const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+        currentTheme = THEMES.some((theme) => theme.id === savedTheme) ? savedTheme : "warm";
+    } catch (error) {
+        currentTheme = "warm";
+    }
+
+    applyTheme();
+}
+
+/** Aplica el tema seleccionado y actualiza el icono de acceso rápido. */
+function applyTheme() {
+    const theme = THEMES.find((item) => item.id === currentTheme) || THEMES[0];
+    document.documentElement.dataset.theme = theme.id;
+    elements.themeButton.setAttribute("aria-label", `Tema: ${theme.label}. Cambiar tema`);
+    elements.themeButton.title = `Tema: ${theme.label}`;
+    elements.themeIcon.className = `bi ${theme.icon}`;
+
+    const browserThemeColor = theme.id === "night" ? "#18201f"
+        : theme.id === "sage" ? "#eef1e7" : "#f3e9d2";
+    document.querySelector('meta[name="theme-color"]').setAttribute("content", browserThemeColor);
+}
+
+/** Cambia al siguiente tema y conserva la preferencia del usuario. */
+function cycleTheme() {
+    const index = THEMES.findIndex((theme) => theme.id === currentTheme);
+    currentTheme = THEMES[(index + 1) % THEMES.length].id;
+
+    try {
+        localStorage.setItem(THEME_STORAGE_KEY, currentTheme);
+    } catch (error) {
+        // El tema seguirá activo aunque el navegador impida guardar preferencias.
+    }
+
+    applyTheme();
+}
+
+// ============================================================================
 // Configuración y referencias del DOM
 // ============================================================================
 
@@ -20,6 +63,14 @@ const FAVORITES_PAGE_SIZE = 5;
 
 // Clave usada para persistir los índices de los versículos favoritos.
 const FAVORITES_STORAGE_KEY = "randomVerseFavorites";
+
+// Temas visuales disponibles y clave usada para recordar el seleccionado.
+const THEME_STORAGE_KEY = "randomVerseTheme";
+const THEMES = [
+    { id: "warm", label: "Claro cálido", icon: "bi-sun" },
+    { id: "sage", label: "Verde suave", icon: "bi-tree" },
+    { id: "night", label: "Noche", icon: "bi-moon-stars" }
+];
 
 // Referencias a los elementos de index.html que se actualizan desde este archivo.
 const elements = {
@@ -56,6 +107,8 @@ const elements = {
     chapterShrink: document.getElementById("chapter-shrink"),
     chapterGrow: document.getElementById("chapter-grow"),
     status: document.getElementById("verse-status"),
+    themeButton: document.getElementById("theme-button"),
+    themeIcon: document.getElementById("theme-icon"),
     searchForm: document.getElementById("concordance-form"),
     searchInput: document.getElementById("concordance-input"),
     searchButton: document.getElementById("concordance-search-button"),
@@ -78,6 +131,7 @@ let currentQuery = "";    // Último texto buscado, para mostrarlo en el resumen
 let favoriteIndexes = new Set(); // Índices de los versículos guardados como favoritos.
 let favoritesPage = 1;        // Página actual de la lista de favoritos.
 let chapterFontSize = 1;      // Multiplicador del texto mostrado del capítulo.
+let currentTheme = "warm";    // Tema visual activo.
 
 // ============================================================================
 // Utilidades
@@ -947,6 +1001,7 @@ async function handleShare() {
 // ============================================================================
 
 elements.button.addEventListener("click", handleRefresh);
+elements.themeButton.addEventListener("click", cycleTheme);
 elements.shareButton.addEventListener("click", handleShare);
 elements.copyVerse.addEventListener("click", copyCurrentVerse);
 elements.favoriteButton.addEventListener("click", toggleCurrentFavorite);
@@ -970,6 +1025,7 @@ document.querySelectorAll("[data-nav]").forEach((link) => {
 
 window.addEventListener("hashchange", syncNavFromHash);
 syncNavFromHash();
+loadTheme();
 
 // Al cargar la página se obtiene la Biblia y se muestra el primer versículo.
 loadBible();
