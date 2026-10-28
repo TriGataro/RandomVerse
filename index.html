@@ -40,7 +40,7 @@
         <div class="container">
             <a class="navbar-brand d-flex align-items-center gap-2" href="#inicio" data-nav="inicio">
                 <img class="navbar-brand-icon" src="Img/bible.png" alt="" width="16" height="16">
-                <span>Versículo Aleatorio</span>
+                <span>Versículo</span>
             </a>
 
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#main-nav"
@@ -83,7 +83,7 @@
                     <span class="brand-icon d-inline-flex align-items-center justify-content-center rounded-circle mb-3">
                         <i class="bi bi-book-half" aria-hidden="true"></i>
                     </span>
-                    <h1 class="h3 fw-bold mb-1">Versículo Aleatorio</h1>
+                    <h1 class="h3 fw-bold mb-1">Versículo</h1>
                     <p class="text-body-secondary mb-0">Un mensaje de la Palabra para hoy</p>
                 </section>
 
@@ -159,18 +159,38 @@
                                                 Correo electrónico
                                             </a>
                                         </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <button id="copy-verse" type="button"
+                                                class="dropdown-item d-flex align-items-center gap-2">
+                                                <i class="bi bi-clipboard share-option-icon" aria-hidden="true"></i>
+                                                Copiar versículo
+                                            </button>
+                                        </li>
                                     </ul>
                                 </div>
 
                                 <button id="chapter-button" type="button" class="btn btn-outline-primary btn-lg rounded-pill px-4"
                                     aria-controls="chapter-container" aria-expanded="false" disabled>
                                     <i id="chapter-icon" class="bi bi-journal-text me-2" aria-hidden="true"></i>
-                                    <span id="chapter-label">Mostrar capítulo</span>
+                                    <span id="chapter-label">Leer capítulo</span>
                                 </button>
                             </div>
 
                             <section id="chapter-container" class="chapter-container mt-4 d-none" aria-labelledby="chapter-title">
-                                <h2 id="chapter-title" class="h5 fw-bold mb-3"></h2>
+                                <div class="chapter-header d-flex align-items-center justify-content-between gap-3 mb-3">
+                                    <h2 id="chapter-title" class="h5 fw-bold mb-0"></h2>
+                                    <div class="chapter-text-controls d-flex gap-1" role="group" aria-label="Tamaño del texto del capítulo">
+                                        <button id="chapter-shrink" type="button" class="btn btn-sm chapter-text-button"
+                                            aria-label="Encoger texto del capítulo" title="Encoger texto">
+                                            <i class="bi bi-zoom-out" aria-hidden="true"></i>
+                                        </button>
+                                        <button id="chapter-grow" type="button" class="btn btn-sm chapter-text-button"
+                                            aria-label="Agrandar texto del capítulo" title="Agrandar texto">
+                                            <i class="bi bi-zoom-in" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
+                                </div>
                                 <ol id="chapter-verses" class="chapter-verses mb-0"></ol>
                             </section>
 
@@ -201,6 +221,9 @@
                                 Aún no tienes versículos favoritos. Pulsa el corazón del versículo para guardarlo.
                             </p>
                             <div id="favorites-list" class="favorites-list d-grid gap-3 d-none"></div>
+                            <nav id="favorites-pagination-nav" class="d-none mt-4" aria-label="Paginación de favoritos">
+                                <ul id="favorites-pagination" class="pagination pagination-sm justify-content-center mb-0"></ul>
+                            </nav>
                         </div>
                     </div>
                 </section>

@@ -113,13 +113,11 @@ body {
     top: 0;
     right: 0;
     display: inline-grid;
-    width: 2.75rem;
-    height: 2.75rem;
     place-items: center;
+    padding: 0;
     color: var(--rv-accent);
-    border: 1px solid var(--rv-border);
-    border-radius: 50%;
-    background: var(--rv-surface);
+    border: 0;
+    background: transparent;
     font-size: 1.35rem;
 }
 
@@ -127,8 +125,8 @@ body {
 .favorite-button:focus-visible,
 .favorite-button.is-favorite {
     color: #9d2f37;
-    border-color: #9d2f37;
-    background: #fff;
+    border: 0;
+    background: transparent;
 }
 
 .verse-reference {
@@ -217,6 +215,25 @@ body {
     font-size: 1.05rem;
 }
 
+/* Controles de tamaño y texto del capítulo completo. */
+.chapter-text-button {
+    color: var(--rv-accent);
+    border: 1px solid var(--rv-border);
+    border-radius: 50rem;
+    background: var(--rv-surface);
+}
+
+.chapter-text-button:hover,
+.chapter-text-button:focus-visible {
+    color: #ffffff;
+    border-color: var(--rv-accent);
+    background: var(--rv-accent);
+}
+
+.chapter-text-button:disabled {
+    opacity: 0.45;
+}
+
 /* Capítulo completo del versículo seleccionado. */
 .chapter-container {
     padding: 1.25rem;
@@ -235,6 +252,20 @@ body {
     padding: 0.15rem 0 0.15rem 0.35rem;
     font-family: Georgia, "Times New Roman", serif;
     line-height: 1.65;
+}
+
+.chapter-verse-button {
+   width: 100%;
+   padding: 0.15rem 0;
+   color: inherit;
+   background: transparent;
+   border: 0;
+   text-align: inherit;
+}
+
+.chapter-verse-button:hover,
+.chapter-verse-button:focus-visible {
+   color: var(--rv-accent);
 }
 
 .chapter-verses li::marker {

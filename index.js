@@ -12,7 +12,11 @@ const FEEDBACK_DURATION = 3000;
 const SEARCH_PAGE_SIZE = 10;
 
 // Mínimo de caracteres aceptados en una búsqueda.
-const MIN_SEARCH_LENGTH = 2;
+const MIN_SEARCH_LENGTH = 3;
+
+// Máximo de favoritos y cantidad mostrada por página.
+const MAX_FAVORITES = 10;
+const FAVORITES_PAGE_SIZE = 5;
 
 // Clave usada para persistir los índices de los versículos favoritos.
 const FAVORITES_STORAGE_KEY = "randomVerseFavorites";
@@ -34,18 +38,23 @@ const elements = {
     shareFacebook: document.getElementById("share-facebook"),
     shareX: document.getElementById("share-x"),
     shareEmail: document.getElementById("share-email"),
+    copyVerse: document.getElementById("copy-verse"),
     favoriteButton: document.getElementById("favorite-button"),
     favoriteIcon: document.getElementById("favorite-icon"),
     favoritesCount: document.getElementById("favorites-count"),
     favoritesSummary: document.getElementById("favorites-summary"),
     favoritesEmpty: document.getElementById("favorites-empty"),
     favoritesList: document.getElementById("favorites-list"),
+    favoritesPaginationNav: document.getElementById("favorites-pagination-nav"),
+    favoritesPagination: document.getElementById("favorites-pagination"),
     chapterButton: document.getElementById("chapter-button"),
     chapterIcon: document.getElementById("chapter-icon"),
     chapterLabel: document.getElementById("chapter-label"),
     chapterContainer: document.getElementById("chapter-container"),
     chapterTitle: document.getElementById("chapter-title"),
     chapterVerses: document.getElementById("chapter-verses"),
+    chapterShrink: document.getElementById("chapter-shrink"),
+    chapterGrow: document.getElementById("chapter-grow"),
     status: document.getElementById("verse-status"),
     searchForm: document.getElementById("concordance-form"),
     searchInput: document.getElementById("concordance-input"),
@@ -67,6 +76,8 @@ let searchResults = [];   // Índices de los versículos que coinciden con la b�
 let searchPage = 1;       // Página actual de resultados (empieza en 1).
 let currentQuery = "";    // Último texto buscado, para mostrarlo en el resumen.
 let favoriteIndexes = new Set(); // Índices de los versículos guardados como favoritos.
+let favoritesPage = 1;        // Página actual de la lista de favoritos.
+let chapterFontSize = 1;      // Multiplicador del texto mostrado del capítulo.
 
 // ============================================================================
 // Utilidades
@@ -173,7 +184,9 @@ function loadFavorites() {
         const storedFavorites = JSON.parse(localStorage.getItem(FAVORITES_STORAGE_KEY) || "[]");
 
         favoriteIndexes = new Set(Array.isArray(storedFavorites)
-            ? storedFavorites.filter((index) => Number.isInteger(index) && index >= 1)
+            ? storedFavorites
+                .filter((index) => Number.isInteger(index) && index >= 1)
+                .slice(-MAX_FAVORITES)
             : []);
     } catch (error) {
         console.warn("No se pudieron recuperar los favoritos:", error);
@@ -228,8 +241,14 @@ function toggleCurrentFavorite() {
 
     if (favoriteIndexes.has(verseKey)) {
         favoriteIndexes.delete(verseKey);
+        favoritesPage = 1;
         showShareFeedback("Versículo eliminado de favoritos.", "success");
     } else {
+        if (favoriteIndexes.size >= MAX_FAVORITES) {
+            showShareFeedback(`Puedes guardar hasta ${MAX_FAVORITES} favoritos.`, "error");
+            return;
+        }
+
         favoriteIndexes.add(verseKey);
         showShareFeedback("Versículo guardado como favorito.", "success");
     }
@@ -239,6 +258,39 @@ function toggleCurrentFavorite() {
     renderFavorites();
 }
 
+/** Construye el paginador de la lista limitada de favoritos. */
+function renderFavoritesPagination(totalPages) {
+    if (totalPages <= 1) {
+        elements.favoritesPagination.innerHTML = "";
+        elements.favoritesPaginationNav.classList.add("d-none");
+        return;
+    }
+
+    let html = `<li class="page-item ${favoritesPage === 1 ? "disabled" : ""}">
+        <button class="page-link" type="button" data-favorites-page="${favoritesPage - 1}"
+            aria-label="Página anterior" ${favoritesPage === 1 ? "disabled" : ""}>
+            <i class="bi bi-chevron-left" aria-hidden="true"></i>
+        </button>
+    </li>`;
+
+    for (let page = 1; page <= totalPages; page++) {
+        html += `<li class="page-item ${page === favoritesPage ? "active" : ""}">
+            <button class="page-link" type="button" data-favorites-page="${page}"
+                ${page === favoritesPage ? 'aria-current="page"' : ""}>${page}</button>
+        </li>`;
+    }
+
+    html += `<li class="page-item ${favoritesPage === totalPages ? "disabled" : ""}">
+        <button class="page-link" type="button" data-favorites-page="${favoritesPage + 1}"
+            aria-label="Página siguiente" ${favoritesPage === totalPages ? "disabled" : ""}>
+            <i class="bi bi-chevron-right" aria-hidden="true"></i>
+        </button>
+    </li>`;
+
+    elements.favoritesPagination.innerHTML = html;
+    elements.favoritesPaginationNav.classList.remove("d-none");
+}
+
 /** Muestra los versos guardados y permite abrirlos o eliminarlos. */
 function renderFavorites() {
     const favoriteVerses = [...favoriteIndexes]
@@ -246,15 +298,21 @@ function renderFavorites() {
         .filter(Boolean);
 
     const count = favoriteVerses.length;
+    const totalPages = Math.ceil(count / FAVORITES_PAGE_SIZE);
+    favoritesPage = Math.min(Math.max(favoritesPage, 1), Math.max(totalPages, 1));
+
+    const start = (favoritesPage - 1) * FAVORITES_PAGE_SIZE;
+    const pageFavorites = favoriteVerses.slice(start, start + FAVORITES_PAGE_SIZE);
+
     elements.favoritesCount.textContent = String(count);
     elements.favoritesCount.classList.toggle("d-none", count === 0);
     elements.favoritesSummary.textContent = count === 1
-        ? "Tienes 1 versículo favorito guardado en este dispositivo."
-        : `Tienes ${count} versículos favoritos guardados en este dispositivo.`;
+        ? "Tienes 1 versículo favorito de un máximo de 10."
+        : `Tienes ${count} versículos favoritos de un máximo de 10.`;
     elements.favoritesEmpty.classList.toggle("d-none", count > 0);
     elements.favoritesList.classList.toggle("d-none", count === 0);
 
-    elements.favoritesList.innerHTML = favoriteVerses
+    elements.favoritesList.innerHTML = pageFavorites
         .map((verse) => {
             const verseKey = getVerseKey(verse);
             const reference = escapeHtml(formatReference(verse));
@@ -275,6 +333,27 @@ function renderFavorites() {
             </article>`;
         })
         .join("");
+
+    renderFavoritesPagination(totalPages);
+}
+
+/** Cambia de página dentro de los favoritos. */
+function handleFavoritesPagination(event) {
+    const button = event.target.closest("[data-favorites-page]");
+
+    if (!button || button.disabled) {
+        return;
+    }
+
+    const totalPages = Math.ceil(favoriteIndexes.size / FAVORITES_PAGE_SIZE);
+    const page = Number(button.dataset.favoritesPage);
+
+    if (!Number.isInteger(page) || page < 1 || page > totalPages) {
+        return;
+    }
+
+    favoritesPage = page;
+    renderFavorites();
 }
 
 /** Abre un favorito desde la tarjeta de favoritos. */
@@ -412,12 +491,16 @@ function showError(message) {
 
 /** Oculta el capítulo completo y restablece el botón de consulta. */
 function clearChapter() {
+    chapterFontSize = 1;
+    elements.chapterVerses.style.fontSize = "";
+    elements.chapterShrink.disabled = false;
+    elements.chapterGrow.disabled = false;
     elements.chapterContainer.classList.add("d-none");
     elements.chapterContainer.setAttribute("aria-hidden", "true");
     elements.chapterVerses.replaceChildren();
     elements.chapterTitle.textContent = "";
     elements.chapterButton.setAttribute("aria-expanded", "false");
-    elements.chapterLabel.textContent = "Mostrar capítulo";
+    elements.chapterLabel.textContent = "Leer capítulo";
     elements.chapterIcon.className = "bi bi-journal-text me-2";
 }
 
@@ -440,7 +523,10 @@ function toggleChapter() {
 
     elements.chapterTitle.textContent = `${currentVerse.Book} ${currentVerse.Chapter}`;
     elements.chapterVerses.innerHTML = chapterVerses.map((verse) =>
-        `<li value="${verse.Verse}">${escapeHtml(verse.Text)}</li>`
+        `<li value="${verse.Verse}">
+            <button type="button" class="chapter-verse-button" data-chapter-verse="${getVerseKey(verse)}"
+                aria-label="Mostrar ${escapeHtml(formatReference(verse))}">${escapeHtml(verse.Text)}</button>
+        </li>`
     ).join("");
     elements.chapterContainer.classList.remove("d-none");
     elements.chapterContainer.setAttribute("aria-hidden", "false");
@@ -449,6 +535,30 @@ function toggleChapter() {
     elements.chapterIcon.className = "bi bi-chevron-up me-2";
 
     elements.chapterContainer.scrollIntoView({ block: "nearest" });
+}
+
+/** Muestra en la tarjeta principal el versículo elegido dentro del capítulo. */
+function selectChapterVerse(event) {
+    const button = event.target.closest("[data-chapter-verse]");
+
+    if (!button) {
+        return;
+    }
+
+    const verseKey = Number(button.dataset.chapterVerse);
+    const index = verses.findIndex((verse) => getVerseKey(verse) === verseKey);
+
+    if (index >= 0) {
+        selectVerseByIndex(index);
+    }
+}
+
+/** Ajusta el tamaño de la letra del capítulo dentro de límites accesibles. */
+function resizeChapterText(change) {
+    chapterFontSize = Math.min(1.5, Math.max(0.75, chapterFontSize + change));
+    elements.chapterVerses.style.fontSize = `${chapterFontSize}rem`;
+    elements.chapterShrink.disabled = chapterFontSize <= 0.75;
+    elements.chapterGrow.disabled = chapterFontSize >= 1.5;
 }
 
 /** Elige un versículo al azar de la lista y lo muestra. */
@@ -844,9 +954,14 @@ async function handleShare() {
 
 elements.button.addEventListener("click", handleRefresh);
 elements.shareButton.addEventListener("click", handleShare);
+elements.copyVerse.addEventListener("click", copyCurrentVerse);
 elements.favoriteButton.addEventListener("click", toggleCurrentFavorite);
 elements.chapterButton.addEventListener("click", toggleChapter);
 elements.favoritesList.addEventListener("click", openFavorite);
+elements.favoritesPagination.addEventListener("click", handleFavoritesPagination);
+elements.chapterVerses.addEventListener("click", selectChapterVerse);
+elements.chapterShrink.addEventListener("click", () => resizeChapterText(-0.15));
+elements.chapterGrow.addEventListener("click", () => resizeChapterText(0.15));
 
 elements.searchForm.addEventListener("submit", handleSearch);
 elements.searchTbody.addEventListener("click", handleResultClick);
