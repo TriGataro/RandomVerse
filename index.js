@@ -12,7 +12,7 @@ const FEEDBACK_DURATION = 3000;
 const SEARCH_PAGE_SIZE = 10;
 
 // Mínimo de caracteres aceptados en una búsqueda.
-const MIN_SEARCH_LENGTH = 3;
+const MIN_SEARCH_LENGTH = 2;
 
 // Máximo de favoritos y cantidad mostrada por página.
 const MAX_FAVORITES = 10;
@@ -698,12 +698,6 @@ function renderSearchResults() {
             return `<tr class="concordance-row" data-verse-index="${verseIndex}">
                 <td class="text-nowrap"><span class="fw-semibold">${reference}</span></td>
                 <td><span class="concordance-text" title="${text}">${text}</span></td>
-                <td class="text-end">
-                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3"
-                        data-verse-index="${verseIndex}">
-                        Ver
-                    </button>
-                </td>
             </tr>`;
         })
         .join("");
