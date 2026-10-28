@@ -65,6 +65,12 @@
                             <i class="bi bi-search me-1" aria-hidden="true"></i>Concordancia
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#favoritos" data-nav="favoritos">
+                            <i class="bi bi-heart me-1" aria-hidden="true"></i>Favoritos
+                            <span id="favorites-count" class="badge rounded-pill favorite-count ms-1 d-none">0</span>
+                        </a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -85,6 +91,11 @@
                     <div class="verse-card card border-0 shadow-lg mx-auto">
                         <div class="card-body p-4 p-md-5">
                             <div id="verse-container" class="verse-container text-center" aria-live="polite">
+                                <button id="favorite-button" type="button" class="btn favorite-button"
+                                    aria-label="Guardar versículo como favorito" aria-pressed="false" disabled>
+                                    <i id="favorite-icon" class="bi bi-heart" aria-hidden="true"></i>
+                                </button>
+
                                 <p id="verse-reference" class="verse-reference text-uppercase fw-semibold mb-3">
                                     Cargando…
                                 </p>
@@ -104,60 +115,64 @@
                                     <span id="refresh-label">Cargando…</span>
                                 </button>
 
-                                <div class="btn-group share-group" role="group" aria-label="Compartir el versículo">
-                                    <button id="share-button" type="button" class="btn btn-outline-primary btn-lg px-4 share-main" disabled>
+                                <div class="dropdown share-dropdown">
+                                    <button id="share-button" type="button"
+                                        class="btn btn-outline-primary btn-lg rounded-pill px-4 w-100"
+                                        aria-controls="share-menu" aria-expanded="false" disabled>
                                         <i id="share-icon" class="bi bi-share me-2" aria-hidden="true"></i>
                                         <span id="share-label">Compartir</span>
                                     </button>
 
-                                    <button id="share-menu-button" type="button"
-                                        class="btn btn-outline-primary btn-lg dropdown-toggle dropdown-toggle-split"
-                                        data-bs-toggle="dropdown" aria-expanded="false" disabled>
-                                        <span class="visually-hidden">Más opciones para compartir</span>
-                                    </button>
-
-                                    <ul class="dropdown-menu dropdown-menu-end share-menu shadow-sm">
-                                        <li>
-                                            <h2 class="dropdown-header h6 mb-1">Compartir en</h2>
-                                        </li>
+                                    <ul id="share-menu" class="dropdown-menu dropdown-menu-end shadow-sm w-100 text-start">
+                                        <li><h2 class="dropdown-header h6 mb-1">Compartir por</h2></li>
                                         <li>
                                             <a id="share-whatsapp" class="dropdown-item d-flex align-items-center gap-2"
                                                 href="#" target="_blank" rel="noopener noreferrer">
-                                                <i class="bi bi-whatsapp social-icon social-whatsapp" aria-hidden="true"></i>
+                                                <i class="bi bi-whatsapp share-option-icon" aria-hidden="true"></i>
                                                 WhatsApp
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a id="share-telegram" class="dropdown-item d-flex align-items-center gap-2"
+                                                href="#" target="_blank" rel="noopener noreferrer">
+                                                <i class="bi bi-telegram share-option-icon" aria-hidden="true"></i>
+                                                Telegram
                                             </a>
                                         </li>
                                         <li>
                                             <a id="share-facebook" class="dropdown-item d-flex align-items-center gap-2"
                                                 href="#" target="_blank" rel="noopener noreferrer">
-                                                <i class="bi bi-facebook social-icon social-facebook" aria-hidden="true"></i>
+                                                <i class="bi bi-facebook share-option-icon" aria-hidden="true"></i>
                                                 Facebook
                                             </a>
                                         </li>
                                         <li>
                                             <a id="share-x" class="dropdown-item d-flex align-items-center gap-2"
                                                 href="#" target="_blank" rel="noopener noreferrer">
-                                                <i class="bi bi-twitter-x social-icon social-x" aria-hidden="true"></i>
+                                                <i class="bi bi-twitter-x share-option-icon" aria-hidden="true"></i>
                                                 X (Twitter)
                                             </a>
                                         </li>
                                         <li>
-                                            <a id="share-telegram" class="dropdown-item d-flex align-items-center gap-2"
-                                                href="#" target="_blank" rel="noopener noreferrer">
-                                                <i class="bi bi-telegram social-icon social-telegram" aria-hidden="true"></i>
-                                                Telegram
+                                            <a id="share-email" class="dropdown-item d-flex align-items-center gap-2" href="#">
+                                                <i class="bi bi-envelope share-option-icon" aria-hidden="true"></i>
+                                                Correo electrónico
                                             </a>
-                                        </li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li>
-                                            <button id="copy-verse" type="button" class="dropdown-item d-flex align-items-center gap-2">
-                                                <i class="bi bi-clipboard social-icon" aria-hidden="true"></i>
-                                                Copiar versículo y enlace
-                                            </button>
                                         </li>
                                     </ul>
                                 </div>
+
+                                <button id="chapter-button" type="button" class="btn btn-outline-primary btn-lg rounded-pill px-4"
+                                    aria-controls="chapter-container" aria-expanded="false" disabled>
+                                    <i id="chapter-icon" class="bi bi-journal-text me-2" aria-hidden="true"></i>
+                                    <span id="chapter-label">Mostrar capítulo</span>
+                                </button>
                             </div>
+
+                            <section id="chapter-container" class="chapter-container mt-4 d-none" aria-labelledby="chapter-title">
+                                <h2 id="chapter-title" class="h5 fw-bold mb-3"></h2>
+                                <ol id="chapter-verses" class="chapter-verses mb-0"></ol>
+                            </section>
 
                             <p id="share-feedback" class="share-feedback text-center small mt-3 mb-0" aria-live="polite"></p>
 
@@ -166,6 +181,26 @@
 
                         <div class="card-footer bg-transparent border-0 text-center pb-4">
                             <small class="text-body-secondary">Reina Valera 1960</small>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="favoritos" class="app-section mt-5">
+                    <div class="favorites-card card border-0 shadow-lg mx-auto">
+                        <div class="card-body p-4 p-md-5">
+                            <header class="mb-4">
+                                <h2 class="h4 fw-bold mb-1">
+                                    <i class="bi bi-heart-fill me-2" aria-hidden="true"></i>Versículos favoritos
+                                </h2>
+                                <p id="favorites-summary" class="text-body-secondary mb-0">
+                                    Los versículos que guardes aparecerán aquí.
+                                </p>
+                            </header>
+
+                            <p id="favorites-empty" class="alert alert-light border mb-0">
+                                Aún no tienes versículos favoritos. Pulsa el corazón del versículo para guardarlo.
+                            </p>
+                            <div id="favorites-list" class="favorites-list d-grid gap-3 d-none"></div>
                         </div>
                     </div>
                 </section>

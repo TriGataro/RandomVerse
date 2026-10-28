@@ -14,6 +14,9 @@ const SEARCH_PAGE_SIZE = 10;
 // Mínimo de caracteres aceptados en una búsqueda.
 const MIN_SEARCH_LENGTH = 2;
 
+// Clave usada para persistir los índices de los versículos favoritos.
+const FAVORITES_STORAGE_KEY = "randomVerseFavorites";
+
 // Referencias a los elementos de index.html que se actualizan desde este archivo.
 const elements = {
     container: document.getElementById("verse-container"),
@@ -25,8 +28,24 @@ const elements = {
     icon: document.getElementById("refresh-icon"),
     label: document.getElementById("refresh-label"),
     shareButton: document.getElementById("share-button"),
-    shareMenuButton: document.getElementById("share-menu-button"),
     shareFeedback: document.getElementById("share-feedback"),
+    shareWhatsApp: document.getElementById("share-whatsapp"),
+    shareTelegram: document.getElementById("share-telegram"),
+    shareFacebook: document.getElementById("share-facebook"),
+    shareX: document.getElementById("share-x"),
+    shareEmail: document.getElementById("share-email"),
+    favoriteButton: document.getElementById("favorite-button"),
+    favoriteIcon: document.getElementById("favorite-icon"),
+    favoritesCount: document.getElementById("favorites-count"),
+    favoritesSummary: document.getElementById("favorites-summary"),
+    favoritesEmpty: document.getElementById("favorites-empty"),
+    favoritesList: document.getElementById("favorites-list"),
+    chapterButton: document.getElementById("chapter-button"),
+    chapterIcon: document.getElementById("chapter-icon"),
+    chapterLabel: document.getElementById("chapter-label"),
+    chapterContainer: document.getElementById("chapter-container"),
+    chapterTitle: document.getElementById("chapter-title"),
+    chapterVerses: document.getElementById("chapter-verses"),
     status: document.getElementById("verse-status"),
     searchForm: document.getElementById("concordance-form"),
     searchInput: document.getElementById("concordance-input"),
@@ -39,14 +58,6 @@ const elements = {
     pagination: document.getElementById("concordance-pagination"),
 };
 
-// Enlaces a redes sociales; se completan con el versículo actual.
-const socialLinks = {
-    whatsapp: document.getElementById("share-whatsapp"),
-    facebook: document.getElementById("share-facebook"),
-    x: document.getElementById("share-x"),
-    telegram: document.getElementById("share-telegram"),
-};
-
 // Estado de la aplicación.
 let verses = [];          // Lista completa de versículos cargados desde el JSON.
 let currentIndex = -1;    // Posición del versículo actual dentro de `verses`.
@@ -55,6 +66,7 @@ let feedbackTimer = null; // Temporizador para ocultar el mensaje de compartir.
 let searchResults = [];   // Índices de los versículos que coinciden con la búsqueda.
 let searchPage = 1;       // Página actual de resultados (empieza en 1).
 let currentQuery = "";    // Último texto buscado, para mostrarlo en el resumen.
+let favoriteIndexes = new Set(); // Índices de los versículos guardados como favoritos.
 
 // ============================================================================
 // Utilidades
@@ -120,7 +132,8 @@ function setLoading(isLoading) {
 
     if (isLoading) {
         elements.shareButton.disabled = true;
-        elements.shareMenuButton.disabled = true;
+        elements.favoriteButton.disabled = true;
+        elements.chapterButton.disabled = true;
         setSearchEnabled(false);
     }
 
@@ -152,6 +165,140 @@ function clearShareFeedback() {
     clearTimeout(feedbackTimer);
     elements.shareFeedback.textContent = "";
     elements.shareFeedback.classList.remove("is-success", "is-error");
+}
+
+/** Lee los índices favoritos guardados, descartando datos inválidos. */
+function loadFavorites() {
+    try {
+        const storedFavorites = JSON.parse(localStorage.getItem(FAVORITES_STORAGE_KEY) || "[]");
+
+        favoriteIndexes = new Set(Array.isArray(storedFavorites)
+            ? storedFavorites.filter((index) => Number.isInteger(index) && index >= 1)
+            : []);
+    } catch (error) {
+        console.warn("No se pudieron recuperar los favoritos:", error);
+        favoriteIndexes = new Set();
+    }
+
+    renderFavorites();
+}
+
+/** Guarda la colección actual de favoritos en el almacenamiento local. */
+function saveFavorites() {
+    try {
+        localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify([...favoriteIndexes].sort((a, b) => a - b)));
+    } catch (error) {
+        console.error("No se pudieron guardar los favoritos:", error);
+        showShareFeedback("No se pudo guardar el favorito en este navegador.", "error");
+    }
+}
+
+/** Devuelve el identificador estable usado por el registro de favoritos. */
+function getVerseKey(verse) {
+    return Number.isInteger(verse.Index) ? verse.Index : verses.indexOf(verse) + 1;
+}
+
+/** Actualiza el corazón del versículo mostrado. */
+function updateFavoriteButton() {
+    if (!currentVerse) {
+        elements.favoriteButton.classList.remove("is-favorite");
+        elements.favoriteButton.setAttribute("aria-pressed", "false");
+        elements.favoriteIcon.className = "bi bi-heart";
+        elements.favoriteButton.setAttribute("aria-label", "Guardar versículo como favorito");
+        return;
+    }
+
+    const isFavorite = favoriteIndexes.has(getVerseKey(currentVerse));
+    elements.favoriteButton.classList.toggle("is-favorite", isFavorite);
+    elements.favoriteButton.setAttribute("aria-pressed", String(isFavorite));
+    elements.favoriteIcon.className = isFavorite ? "bi bi-heart-fill" : "bi bi-heart";
+    elements.favoriteButton.setAttribute(
+        "aria-label",
+        isFavorite ? "Quitar versículo de favoritos" : "Guardar versículo como favorito"
+    );
+}
+
+/** Alterna el estado favorito del versículo mostrado. */
+function toggleCurrentFavorite() {
+    if (!currentVerse) {
+        return;
+    }
+
+    const verseKey = getVerseKey(currentVerse);
+
+    if (favoriteIndexes.has(verseKey)) {
+        favoriteIndexes.delete(verseKey);
+        showShareFeedback("Versículo eliminado de favoritos.", "success");
+    } else {
+        favoriteIndexes.add(verseKey);
+        showShareFeedback("Versículo guardado como favorito.", "success");
+    }
+
+    saveFavorites();
+    updateFavoriteButton();
+    renderFavorites();
+}
+
+/** Muestra los versos guardados y permite abrirlos o eliminarlos. */
+function renderFavorites() {
+    const favoriteVerses = [...favoriteIndexes]
+        .map((key) => verses.find((verse) => getVerseKey(verse) === key))
+        .filter(Boolean);
+
+    const count = favoriteVerses.length;
+    elements.favoritesCount.textContent = String(count);
+    elements.favoritesCount.classList.toggle("d-none", count === 0);
+    elements.favoritesSummary.textContent = count === 1
+        ? "Tienes 1 versículo favorito guardado en este dispositivo."
+        : `Tienes ${count} versículos favoritos guardados en este dispositivo.`;
+    elements.favoritesEmpty.classList.toggle("d-none", count > 0);
+    elements.favoritesList.classList.toggle("d-none", count === 0);
+
+    elements.favoritesList.innerHTML = favoriteVerses
+        .map((verse) => {
+            const verseKey = getVerseKey(verse);
+            const reference = escapeHtml(formatReference(verse));
+            const text = escapeHtml(verse.Text);
+
+            return `<article class="favorite-item card border-0">
+                <div class="card-body d-flex gap-3 align-items-start">
+                    <button type="button" class="favorite-open text-start border-0 bg-transparent flex-grow-1 p-0"
+                        data-favorite-index="${verseKey}" aria-label="Ver ${reference}">
+                        <span class="d-block text-primary fw-semibold mb-1">${reference}</span>
+                        <span class="d-block favorite-text">${text}</span>
+                    </button>
+                    <button type="button" class="btn favorite-remove" data-remove-favorite="${verseKey}"
+                        aria-label="Eliminar ${reference} de favoritos" title="Eliminar favorito">
+                        <i class="bi bi-heart-fill" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </article>`;
+        })
+        .join("");
+}
+
+/** Abre un favorito desde la tarjeta de favoritos. */
+function openFavorite(event) {
+    const openButton = event.target.closest("[data-favorite-index]");
+
+    if (openButton) {
+        const verseKey = Number(openButton.dataset.favoriteIndex);
+        const index = verses.findIndex((verse) => getVerseKey(verse) === verseKey);
+
+        if (index >= 0) {
+            selectVerseByIndex(index);
+        }
+        return;
+    }
+
+    const removeButton = event.target.closest("[data-remove-favorite]");
+
+    if (removeButton) {
+        favoriteIndexes.delete(Number(removeButton.dataset.removeFavorite));
+        saveFavorites();
+        updateFavoriteButton();
+        renderFavorites();
+    }
 }
 
 /** Muestra un mensaje en la sección de concordancia y oculta la tabla. */
@@ -212,7 +359,7 @@ function scrollToSection(id) {
 function syncNavFromHash() {
     const view = window.location.hash.replace("#", "");
 
-    if (["inicio", "versiculo", "concordancia"].includes(view)) {
+    if (["inicio", "versiculo", "favoritos", "concordancia"].includes(view)) {
         setActiveNav(view);
     }
 }
@@ -230,10 +377,13 @@ function renderVerse(verse) {
     elements.title.textContent = verse.Title ? `Tema: ${verse.Title}` : "";
     elements.error.classList.add("d-none");
     elements.shareButton.disabled = false;
-    elements.shareMenuButton.disabled = false;
+    elements.favoriteButton.disabled = false;
+    elements.chapterButton.disabled = false;
 
+    clearChapter();
     clearShareFeedback();
-    updateSocialLinks(verse);
+    updateFavoriteButton();
+    updateShareLinks(verse);
 
     // Reinicia la animación para que se aprecie el cambio de versículo.
     elements.container.classList.remove("is-updating");
@@ -248,7 +398,9 @@ function renderVerse(verse) {
 function showError(message) {
     currentVerse = null;
     elements.shareButton.disabled = true;
-    elements.shareMenuButton.disabled = true;
+    elements.favoriteButton.disabled = true;
+    elements.chapterButton.disabled = true;
+    clearChapter();
 
     elements.error.textContent = message;
     elements.error.classList.remove("d-none");
@@ -256,6 +408,47 @@ function showError(message) {
     elements.text.textContent = "No se pudo mostrar el versículo.";
     elements.title.textContent = "";
     elements.status.textContent = message;
+}
+
+/** Oculta el capítulo completo y restablece el botón de consulta. */
+function clearChapter() {
+    elements.chapterContainer.classList.add("d-none");
+    elements.chapterContainer.setAttribute("aria-hidden", "true");
+    elements.chapterVerses.replaceChildren();
+    elements.chapterTitle.textContent = "";
+    elements.chapterButton.setAttribute("aria-expanded", "false");
+    elements.chapterLabel.textContent = "Mostrar capítulo";
+    elements.chapterIcon.className = "bi bi-journal-text me-2";
+}
+
+/** Obtiene y muestra todos los versículos del capítulo del versículo actual. */
+function toggleChapter() {
+    if (!currentVerse) {
+        return;
+    }
+
+    if (!elements.chapterContainer.classList.contains("d-none")) {
+        clearChapter();
+        return;
+    }
+
+    const chapterVerses = verses
+        .filter((verse) => verse.Book === currentVerse.Book
+            && verse.BoookNumber === currentVerse.BoookNumber
+            && verse.Chapter === currentVerse.Chapter)
+        .sort((first, second) => first.Verse - second.Verse);
+
+    elements.chapterTitle.textContent = `${currentVerse.Book} ${currentVerse.Chapter}`;
+    elements.chapterVerses.innerHTML = chapterVerses.map((verse) =>
+        `<li value="${verse.Verse}">${escapeHtml(verse.Text)}</li>`
+    ).join("");
+    elements.chapterContainer.classList.remove("d-none");
+    elements.chapterContainer.setAttribute("aria-hidden", "false");
+    elements.chapterButton.setAttribute("aria-expanded", "true");
+    elements.chapterLabel.textContent = "Ocultar capítulo";
+    elements.chapterIcon.className = "bi bi-chevron-up me-2";
+
+    elements.chapterContainer.scrollIntoView({ block: "nearest" });
 }
 
 /** Elige un versículo al azar de la lista y lo muestra. */
@@ -295,6 +488,7 @@ async function loadBible() {
         }
 
         verses = data;
+        loadFavorites();
         setLoading(false);
         setSearchEnabled(true);
         showRandomVerse();
@@ -518,43 +712,49 @@ function buildShareMessage(verse) {
     return `${buildShareText(verse)}\n\n${window.location.href}`;
 }
 
-/**
- * Construye la URL de compartir para cada red social.
- * El texto y la dirección de la página se codifican para que viajen
- * correctamente dentro de la URL.
- */
-function buildShareUrl(network, verse) {
+/** Construye destinos compatibles con redes sociales y aplicaciones de chat. */
+function buildShareLinks(verse) {
     const text = buildShareText(verse);
+    const message = buildShareMessage(verse);
     const pageUrl = window.location.href;
+    const encodedMessage = encodeURIComponent(message);
     const encodedText = encodeURIComponent(text);
     const encodedUrl = encodeURIComponent(pageUrl);
 
-    const urls = {
-        whatsapp: `https://wa.me/?text=${encodeURIComponent(buildShareMessage(verse))}`,
-        facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedText}`,
-        x: `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`,
+    return {
+        whatsapp: `https://wa.me/?text=${encodedMessage}`,
         telegram: `https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`,
+        facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
+        x: `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`,
+        email: `mailto:?subject=${encodeURIComponent(`${formatReference(verse)} — Reina Valera 1960`)}&body=${encodedMessage}`,
     };
-
-    return urls[network] ?? "#";
 }
 
-/** Actualiza los enlaces del menú para que compartan el versículo actual. */
-function updateSocialLinks(verse) {
-    for (const [network, link] of Object.entries(socialLinks)) {
-        link.href = buildShareUrl(network, verse);
+/** Actualiza los destinos del menú para el versículo mostrado. */
+function updateShareLinks(verse) {
+    const links = buildShareLinks(verse);
+
+    elements.shareWhatsApp.href = links.whatsapp;
+    elements.shareTelegram.href = links.telegram;
+    elements.shareFacebook.href = links.facebook;
+    elements.shareX.href = links.x;
+    elements.shareEmail.href = links.email;
+}
+
+/** Abre o oculta el menú de destinos disponible en equipos sin compartir nativo. */
+function toggleShareMenu() {
+    elements.shareButton.setAttribute("aria-expanded", "true");
+
+    if (window.bootstrap?.Dropdown) {
+        const dropdown = window.bootstrap.Dropdown.getOrCreateInstance(elements.shareButton, {
+            target: "#share-menu",
+            autoClose: true,
+        });
+        dropdown.toggle();
+        return;
     }
-}
 
-/** Abre una URL externa en una pestaña nueva sin perder la referencia de origen. */
-function openExternalWindow(url) {
-    const link = document.createElement("a");
-    link.href = url;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+    copyCurrentVerse();
 }
 
 /**
@@ -635,31 +835,7 @@ async function handleShare() {
         }
     }
 
-    await copyCurrentVerse();
-}
-
-/**
- * Facebook no permite prerrellenar el texto de la publicación desde la web:
- * su enlace de compartir solo acepta la dirección. Por eso se abre su ventana
- * y se copia el texto completo para que el usuario solo tenga que pegarlo.
- */
-async function handleFacebookShare(event) {
-    event.preventDefault();
-
-    if (!currentVerse) {
-        return;
-    }
-
-    // Se abre Facebook dentro del gesto del usuario para evitar bloqueos.
-    openExternalWindow(buildShareUrl("facebook", currentVerse));
-
-    try {
-        await copyText(buildShareMessage(currentVerse));
-        showShareFeedback("Texto copiado. Pégalo en tu publicación de Facebook.", "success");
-    } catch (error) {
-        console.error("Error al copiar el texto para Facebook:", error);
-        showShareFeedback("Usa «Copiar versículo y enlace» y pégalo en Facebook.", "error");
-    }
+    toggleShareMenu();
 }
 
 // ============================================================================
@@ -668,8 +844,9 @@ async function handleFacebookShare(event) {
 
 elements.button.addEventListener("click", handleRefresh);
 elements.shareButton.addEventListener("click", handleShare);
-document.getElementById("copy-verse").addEventListener("click", copyCurrentVerse);
-socialLinks.facebook.addEventListener("click", handleFacebookShare);
+elements.favoriteButton.addEventListener("click", toggleCurrentFavorite);
+elements.chapterButton.addEventListener("click", toggleChapter);
+elements.favoritesList.addEventListener("click", openFavorite);
 
 elements.searchForm.addEventListener("submit", handleSearch);
 elements.searchTbody.addEventListener("click", handleResultClick);

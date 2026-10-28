@@ -101,10 +101,34 @@ body {
 }
 
 .verse-container {
+    position: relative;
     min-height: 12rem;
     display: flex;
     flex-direction: column;
     justify-content: center;
+}
+
+.favorite-button {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: inline-grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    place-items: center;
+    color: var(--rv-accent);
+    border: 1px solid var(--rv-border);
+    border-radius: 50%;
+    background: var(--rv-surface);
+    font-size: 1.35rem;
+}
+
+.favorite-button:hover,
+.favorite-button:focus-visible,
+.favorite-button.is-favorite {
+    color: #9d2f37;
+    border-color: #9d2f37;
+    background: #fff;
 }
 
 .verse-reference {
@@ -174,54 +198,92 @@ body {
     box-shadow: none;
 }
 
-/* Botón de compartir dividido: acción principal + menú de redes sociales. */
-.share-group {
-    display: flex;
+/* Opciones de compartir disponibles en equipos de escritorio. */
+.share-dropdown {
     width: 100%;
 }
 
-.share-group .share-main {
-    flex: 1 1 auto;
-    border-radius: 50rem 0 0 50rem;
-}
-
-.share-group .dropdown-toggle-split {
-    flex: 0 0 auto;
-    padding-right: 0.9rem;
-    padding-left: 0.9rem;
-    border-radius: 0 50rem 50rem 0;
-}
-
-.share-menu {
+.share-dropdown .dropdown-menu {
     --bs-dropdown-bg: var(--rv-surface);
     --bs-dropdown-link-color: var(--rv-text);
-    --bs-dropdown-link-hover-color: var(--rv-text);
+    --bs-dropdown-link-hover-color: var(--rv-accent-active);
     --bs-dropdown-link-hover-bg: var(--rv-accent-soft);
-    --bs-dropdown-link-active-color: #ffffff;
-    --bs-dropdown-link-active-bg: var(--rv-accent);
     --bs-dropdown-border-color: var(--rv-border);
-    min-width: 14rem;
 }
 
-.social-icon {
-    width: 1.1rem;
+.share-option-icon {
+    width: 1.25rem;
     text-align: center;
+    font-size: 1.05rem;
 }
 
-.social-whatsapp {
-    color: #128c7e;
+/* Capítulo completo del versículo seleccionado. */
+.chapter-container {
+    padding: 1.25rem;
+    color: var(--rv-text);
+    background: rgba(255, 250, 240, 0.72);
+    border: 1px solid var(--rv-border);
+    border-radius: 1rem;
+    text-align: left;
 }
 
-.social-facebook {
-    color: #1877f2;
+.chapter-verses {
+    padding-left: 1.75rem;
 }
 
-.social-x {
-    color: #000000;
+.chapter-verses li {
+    padding: 0.15rem 0 0.15rem 0.35rem;
+    font-family: Georgia, "Times New Roman", serif;
+    line-height: 1.65;
 }
 
-.social-telegram {
-    color: #1c7fb8;
+.chapter-verses li::marker {
+    color: var(--rv-accent);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-weight: 700;
+}
+
+/* Favoritos. */
+.favorites-card {
+    max-width: 46rem;
+    border-radius: 1.25rem;
+    background-color: var(--rv-surface);
+    border: 1px solid var(--rv-border);
+}
+
+.favorite-count {
+    color: #ffffff;
+    background: var(--rv-accent);
+}
+
+.favorite-item {
+    background: rgba(255, 255, 255, 0.58);
+    border: 1px solid var(--rv-border);
+}
+
+.favorite-open {
+    color: var(--rv-text);
+}
+
+.favorite-open:focus-visible {
+    outline: 3px solid var(--rv-accent);
+    outline-offset: 4px;
+    border-radius: 0.25rem;
+}
+
+.favorite-text {
+    line-height: 1.55;
+}
+
+.favorite-remove {
+    flex: 0 0 auto;
+    color: #9d2f37;
+}
+
+.favorite-remove:hover,
+.favorite-remove:focus-visible {
+    color: #ffffff;
+    background: #9d2f37;
 }
 
 /* Concordancia. */
