@@ -576,12 +576,20 @@ function toggleChapter() {
         .sort((first, second) => first.Verse - second.Verse);
 
     elements.chapterTitle.textContent = `${currentVerse.Book} ${currentVerse.Chapter}`;
-    elements.chapterVerses.innerHTML = chapterVerses.map((verse) =>
-        `<li value="${verse.Verse}">
+    let previousTitle = "";
+    elements.chapterVerses.innerHTML = chapterVerses.map((verse) => {
+        const title = verse.Title?.trim() || "";
+        const titleMarkup = title && title !== previousTitle
+            ? `<span class="chapter-verse-title">${escapeHtml(title)}</span>`
+            : "";
+        previousTitle = title;
+
+        return `<li value="${verse.Verse}">
+            ${titleMarkup}
             <button type="button" class="chapter-verse-button" data-chapter-verse="${getVerseKey(verse)}"
                 aria-label="Mostrar ${escapeHtml(formatReference(verse))}">${escapeHtml(verse.Text)}</button>
-        </li>`
-    ).join("");
+        </li>`;
+    }).join("");
     elements.chapterContainer.classList.remove("d-none");
     elements.chapterContainer.setAttribute("aria-hidden", "false");
     elements.chapterButton.setAttribute("aria-expanded", "true");

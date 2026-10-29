@@ -318,6 +318,16 @@ body {
     line-height: 1.65;
 }
 
+.chapter-verse-title {
+    display: block;
+    padding: 0.3rem 0 0.1rem;
+    color: var(--rv-accent);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 0.9em;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
 .chapter-verse-button {
    width: 100%;
    padding: 0.15rem 0;
